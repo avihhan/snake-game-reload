@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#cf2635">
+  <meta name="description" content="A pocket-sized retro Snake arcade game. Grab fruit, chase bonus drops, and climb the local leaderboard.">
+  <title>Snake Game Reload</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+    :root{color-scheme:dark;--red:#c92636;--red-hi:#ed4651;--red-dark:#851d2a;--cream:#f6e9d3;--ink:#242322;--lcd:#b7c985;--lcd-dark:#283e2e;--lcd-mid:#526b42;--yellow:#ffd46d}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100svh;display:grid;place-items:center;padding:28px 14px 34px;background:radial-gradient(ellipse at 50% 20%,#352c28 0,#19191b 58%,#101012 100%);color:var(--cream);font-family:'VT323',monospace}
+    button{font:inherit;color:inherit}
+    .page{width:min(100%,980px);display:grid;grid-template-columns:minmax(0,600px) minmax(230px,1fr);gap:28px;align-items:center}
+    .handheld{position:relative;padding:28px 34px 32px;border-radius:42px 42px 70px 42px;background:linear-gradient(135deg,#f0444d 0,#cf2635 38%,#ad1f30 100%);border:2px solid #fa6570;box-shadow:inset 5px 5px 0 #ff7880,inset -8px -11px 0 #861c2a,0 18px 0 #5a1720,0 28px 45px #0009;max-width:600px;width:100%}
+    .brandline{display:flex;justify-content:space-between;align-items:center;padding:0 5px 12px;color:#ffd8cc;text-transform:uppercase;letter-spacing:2px;font-size:23px}
+    .brandline strong{font-family:'Press Start 2P',monospace;font-size:12px;color:#fff1df;letter-spacing:1px;text-shadow:2px 2px 0 #7f1c27}
+    .brandline .edition{font-size:16px;opacity:.8}
+    .bezel{background:linear-gradient(145deg,#292a2a,#17191b);border-radius:20px;padding:20px 20px 16px;box-shadow:inset 0 2px 5px #000,0 4px 0 #841e29}
+    .screen-label{display:flex;justify-content:space-between;align-items:center;color:#a7a5a0;font-size:17px;letter-spacing:1px;text-transform:uppercase;padding:0 0 10px}
+    .power{font-size:13px;display:flex;gap:7px;align-items:center}.power i{display:inline-block;width:8px;height:8px;background:#4adb86;border-radius:50%;box-shadow:0 0 8px #4adb86}
+    .screen-wrap{position:relative;overflow:hidden;border:7px solid #525753;border-radius:7px;background:var(--lcd);box-shadow:inset 0 0 0 2px #29352a,0 1px 10px #0008;aspect-ratio:1/1;width:100%;max-height:500px;margin:auto}
+    canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+    .screen-scanlines{pointer-events:none;position:absolute;inset:0;opacity:.15;background:repeating-linear-gradient(0deg,transparent 0 3px,#1c3022 4px 5px);mix-blend-mode:multiply}
+    .screen-glare{pointer-events:none;position:absolute;inset:0;background:linear-gradient(135deg,#fff3 0%,transparent 24%,transparent 76%,#18251612 100%)}
+    .hud{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:11px 4px 0;color:#d5d5cf;text-transform:uppercase;letter-spacing:1px;font-size:18px}
+    .hud span:last-child{text-align:right}.hud b{color:#fff;font-size:24px;font-weight:400}
+    .device-bottom{display:flex;justify-content:space-between;align-items:center;margin:22px 7px 0}
+    .dpad{width:116px;height:116px;position:relative;filter:drop-shadow(0 4px 0 #7f1825)}
+    .dpad button{position:absolute;background:#26272b;border:0;box-shadow:inset 2px 2px 3px #555,inset -3px -4px 3px #101114;display:grid;place-items:center;color:#777;font-size:22px;cursor:pointer;touch-action:manipulation}
+    .dpad button:active{background:#383a3d;color:#d5d5d5}
+    .dpad .up,.dpad .down{width:38px;height:43px;left:39px;border-radius:5px}.dpad .up{top:0}.dpad .down{bottom:0}
+    .dpad .left,.dpad .right{height:38px;width:43px;top:39px;border-radius:5px}.dpad .left{left:0}.dpad .right{right:0}
+    .dpad .center{position:absolute;left:39px;top:39px;width:38px;height:38px;background:#222;box-shadow:none;border-radius:50%;pointer-events:none}
+    .action-buttons{display:flex;gap:17px;transform:rotate(-25deg);margin-right:8px;filter:drop-shadow(0 4px 0 #7f1825)}
+    .action-btn{width:53px;height:53px;border:2px solid #a92939;border-radius:50%;background:linear-gradient(145deg,#302d31,#17171a);box-shadow:inset 2px 2px 4px #676065,inset -4px -5px 5px #0d0d0e;color:#d6a9a9;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:12px;touch-action:manipulation}
+    .action-btn:active{transform:translateY(3px);box-shadow:inset 2px 2px 4px #111}
+    .action-labels{display:flex;gap:49px;margin:7px 12px 0 auto;width:max-content;color:#ffd3c8;font-size:15px;letter-spacing:1px}
+    .menu-keys{display:flex;justify-content:center;gap:11px;margin:15px 0 0;font-size:16px;color:#eab9b7}
+    kbd{font-family:'VT323',monospace;font-size:17px;color:#fff2df;background:#90202e;padding:1px 6px;border-radius:4px;border-bottom:2px solid #641924}
+    .side-panel{display:flex;flex-direction:column;gap:17px}
+    .card{border:1px solid #4d3d35;border-radius:13px;background:linear-gradient(145deg,#282426eF,#1c1b1e);box-shadow:0 8px 24px #0004;padding:18px 20px}
+    .card h2{font-family:'Press Start 2P',monospace;font-size:11px;line-height:1.7;letter-spacing:.5px;margin:0 0 14px;color:#ffd46d;text-transform:uppercase}
+    .card p{margin:0;color:#c2b6a9;font-size:21px;line-height:1.15}
+    .score-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+    .score-list li{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:7px 9px;background:#ffffff08;border-radius:6px;font-size:19px;color:#c9bfb6}
+    .score-list li:first-child{color:#ffe08a;background:#ffd46d12}.rank{color:#8e837b}.score-value{font-size:22px;color:#f1e6d7}.score-date{font-size:15px;color:#8d8580;grid-column:2/4;margin-top:-5px}
+    .empty-score{text-align:center;padding:14px 8px!important;color:#887e78!important;font-size:19px!important}
+    .tip{display:flex;gap:10px;align-items:flex-start;color:#b3aaa3;font-size:18px;line-height:1.1}.tip b{color:#ff7375;font-weight:400}
+    .overlay{position:absolute;inset:0;display:grid;place-items:center;background:#18261ed9;padding:18px;text-align:center;color:#25362a}
+    .overlay[hidden]{display:none}
+    .overlay-panel{width:min(100%,330px);padding:22px 18px;background:#bdce91;border:3px solid #3b5437;box-shadow:5px 6px 0 #263926;border-radius:4px}
+    .overlay h1,.overlay h2{font-family:'Press Start 2P',monospace;font-size:15px;line-height:1.7;margin:0 0 10px;color:#26382a}
+    .overlay p{font-size:23px;line-height:1.05;margin:8px 0 16px;color:#344632}
+    .primary{border:2px solid #354c34;background:#344f39;color:#e0edb2;padding:11px 14px;border-radius:3px;font-family:'Press Start 2P',monospace;font-size:10px;line-height:1.6;cursor:pointer;box-shadow:0 4px 0 #243827;touch-action:manipulation}
+    .primary:hover{background:#426343}.primary:active{transform:translateY(3px);box-shadow:0 1px 0 #243827}
+    .overlay small{display:block;margin-top:13px;font-size:18px;color:#526847}
+    .bonus-note{color:#ffe08a!important}
+    .toast{position:absolute;top:9px;left:50%;transform:translate(-50%,-150%);background:#293c2e;color:#f5edcc;border:2px solid #789254;border-radius:4px;padding:6px 10px;white-space:nowrap;font-size:19px;transition:transform .2s;z-index:3}
+    .toast.show{transform:translate(-50%,0)}
+    footer{grid-column:1/-1;text-align:center;color:#736d6b;font-size:17px;margin-top:12px;letter-spacing:.5px}
+    @media(max-width:820px){.page{grid-template-columns:minmax(0,560px);justify-content:center;gap:22px}.handheld{margin:auto}.side-panel{display:grid;grid-template-columns:1fr 1fr}.score-card{grid-row:span 2}footer{grid-column:1}}
+    @media(max-width:520px){body{padding:14px 10px 25px}.handheld{padding:19px 17px 23px;border-radius:30px 30px 55px 30px}.brandline{font-size:19px;padding-bottom:9px}.brandline strong{font-size:10px}.bezel{padding:13px 12px 12px;border-radius:15px}.screen-wrap{border-width:5px}.hud{font-size:16px}.hud b{font-size:21px}.device-bottom{margin:17px 5px 0}.dpad{width:100px;height:100px;transform:scale(.88);transform-origin:left center}.action-buttons{gap:12px;margin-right:2px}.action-btn{width:47px;height:47px;font-size:10px}.action-labels{gap:39px;margin-right:9px}.menu-keys{font-size:14px;gap:7px}.side-panel{grid-template-columns:1fr}.score-card{grid-row:auto}.card{padding:15px 16px}.card h2{font-size:10px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="handheld" aria-label="Red handheld console">
+      <div class="brandline"><span>GAME BOY</span><strong>POCKET ARCADE</strong><span class="edition">COLOR</span></div>
+      <div class="bezel">
+        <div class="screen-label"><span>DOT MATRIX WITH STEREO SOUND</span><span class="power"><i></i> POWER</span></div>
+        <div class="screen-wrap">
+          <canvas id="game" width="420" height="420" aria-label="Snake game board"></canvas>
+          <div class="screen-scanlines"></div><div class="screen-glare"></div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+          <div class="overlay" id="overlay">
+            <div class="overlay-panel">
+              <h1 id="overlay-title">SNAKE<br>RELOAD</h1>
+              <p id="overlay-copy">A little snack. A lot of pixels.<br>How long can you last?</p>
+              <button class="primary" id="start-button">PRESS START</button>
+              <small id="overlay-hint">Eat fruit. Don't eat yourself.</small>
+            </div>
+          </div>
+        </div>
+        <div class="hud" aria-live="polite"><span>Score <b id="score">00</b></span><span id="status">READY</span><span>Best <b id="best">00</b></span></div>
+      </div>
+      <div class="device-bottom">
+        <div class="dpad" aria-label="Direction controls">
+          <button class="up" data-dir="up" aria-label="Move up">▲</button>
+          <button class="down" data-dir="down" aria-label="Move down">▼</button>
+          <button class="left" data-dir="left" aria-label="Move left">◀</button>
+          <button class="right" data-dir="right" aria-label="Move right">▶</button>
+          <span class="center"></span>
+        </div>
+        <div class="action-buttons"><button id="pause-button" class="action-btn" aria-label="Pause game">B</button><button id="start-device" class="action-btn" aria-label="Start or restart">A</button></div>
+      </div>
+      <div class="action-labels"><span>PAUSE</span><span>START</span></div>
+      <div class="menu-keys"><span><kbd>↑↓←→</kbd> / <kbd>WASD</kbd></span><span><kbd>SPACE</kbd> pause</span></div>
+    </section>
+    <aside class="side-panel">
+      <section class="card score-card"><h2>🏆 Hall of fame</h2><ol class="score-list" id="score-list"><li class="empty-score">No scores yet. Make history!</li></ol></section>
+      <section class="card"><h2>How to play</h2><p>Chase the fruit. Every bite adds one link and one point. The walls and your own tail are the end of the line.</p></section>
+      <section class="card"><h2>Golden drop</h2><p>After 5–15 snacks, a bonus appears for a short time. It fades faster as your snake grows. Catch it for <b style="color:#ffe08a;font-weight:400">+5 points</b>.</p></section>
+      <section class="card"><div class="tip"><b>✦</b><span>Scores are saved on this device. Set a new high score and leave your initials in the pixels.</span></div></section>
+    </aside>
+    <footer>INSERT COIN · PRESS START · GO FOR THE HIGH SCORE</footer>
+  </main>
+<script>
+(() => {
+  const canvas = document.querySelector('#game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.querySelector('#overlay');
+  const overlayTitle = document.querySelector('#overlay-title');
+  const overlayCopy = document.querySelector('#overlay-copy');
+  const overlayHint = document.querySelector('#overlay-hint');
+  const startButton = document.querySelector('#start-button');
+  const scoreEl = document.querySelector('#score');
+  const bestEl = document.querySelector('#best');
+  const statusEl = document.querySelector('#status');
+  const scoreList = document.querySelector('#score-list');
+  const toast = document.querySelector('#toast');
+  const GRID = 21, CELL = canvas.width / GRID;
+  const COLORS = {bg:'#b7c985', dark:'#283e2e', mid:'#526b42', light:'#d5e5a0', gold:'#f2b93e'};
+  const SCORES_KEY = 'snake-reload-scores-v1';
+  let snake, food, bonus, direction, queuedDirection, score, timer, bonusEvery, foodsSinceBonus, state='ready', lastBonusAt=0, toastTimeout;
+  const center = Math.floor(GRID/2);
+
+  function readScores(){
+    try { const saved = JSON.parse(localStorage.getItem(SCORES_KEY) || '[]'); return Array.isArray(saved) ? saved.filter(x => Number.isFinite(x.score) && typeof x.date === 'string').sort((a,b)=>b.score-a.score).slice(0,5) : []; }
+    catch { return []; }
+  }
+  function saveScore(value){
+    if(value <= 0) return;
+    const scores = readScores(); scores.push({score:value,date:new Date().toISOString()}); scores.sort((a,b)=>b.score-a.score);
+    localStorage.setItem(SCORES_KEY, JSON.stringify(scores.slice(0,5)));
+  }
+  function renderScores(current=null){
+    const scores=readScores();
+    bestEl.textContent=String(scores[0]?.score || 0).padStart(2,'0');
+    if(!scores.length){scoreList.innerHTML='<li class="empty-score">No scores yet. Make history!</li>';return;}
+    scoreList.innerHTML=scores.map((item,i)=>{
+      const stamp=new Date(item.date);
+      const when=Number.isNaN(stamp.getTime())?'Date unknown':stamp.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      const isCurrent=current && item.date===current;
+      return `<li><span class="rank">${String(i+1).padStart(2,'0')}</span><span>${isCurrent?'NEW RUN':'ARCADE RUN'}</span><span class="score-value">${String(item.score).padStart(2,'0')}</span><span class="score-date">${when}</span></li>`;
+    }).join('');
+  }
+  function randCell(){return {x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)}}
+  function freeCell(){
+    for(let i=0;i<GRID*GRID*2;i++){const p=randCell();if(!snake.some(s=>s.x===p.x&&s.y===p.y)&&(!food||p.x!==food.x||p.y!==food.y)&&(!bonus||p.x!==bonus.x||p.y!==bonus.y))return p;}
+    return {x:1,y:1};
+  }
+  function reset(){
+    snake=[{x:center,y:center},{x:center-1,y:center},{x:center-2,y:center}];
+    direction={x:1,y:0,name:'right'}; queuedDirection=direction; score=0; food=freeCell(); bonus=null;
+    foodsSinceBonus=0; bonusEvery=5+Math.floor(Math.random()*11); lastBonusAt=0;
+    scoreEl.textContent='00'; statusEl.textContent='READY'; draw();
+  }
+  function start(){
+    clearInterval(timer); reset(); state='playing'; overlay.hidden=true; statusEl.textContent='PLAY';
+    timer=setInterval(tick, speed()); draw();
+  }
+  function speed(){return Math.max(72, 150 - Math.max(0,snake.length-3)*2.2 - Math.floor(score/5)*4)}
+  function restartTimer(){clearInterval(timer);if(state==='playing')timer=setInterval(tick,speed())}
+  function setDirection(name){
+    const dirs={up:{x:0,y:-1,name:'up'},down:{x:0,y:1,name:'down'},left:{x:-1,y:0,name:'left'},right:{x:1,y:0,name:'right'}};
+    const next=dirs[name];if(!next||state!=='playing')return;
+    if(next.x===-direction.x&&next.y===-direction.y)return;
+    queuedDirection=next;
+  }
+  function tick(){
+    if(state!=='playing')return;
+    direction=queuedDirection;
+    const head={x:snake[0].x+direction.x,y:snake[0].y+direction.y};
+    if(head.x<0||head.y<0||head.x>=GRID||head.y>=GRID){endGame();return;}
+    const gotFood=head.x===food.x&&head.y===food.y;
+    const gotBonus=bonus&&head.x===bonus.x&&head.y===bonus.y;
+    const bodyToCheck=gotFood||gotBonus?snake:snake.slice(0,-1);
+    if(bodyToCheck.some(s=>s.x===head.x&&s.y===head.y)){endGame();return;}
+    snake.unshift(head);
+    if(gotFood){score++;foodsSinceBonus++;food=freeCell();showToast('+1 SNACK');if(foodsSinceBonus>=bonusEvery&&!bonus){spawnBonus();foodsSinceBonus=0;bonusEvery=5+Math.floor(Math.random()*11)}}
+    else if(gotBonus){score+=5;bonus=null;lastBonusAt=0;showToast('GOLDEN! +5')}
+    else snake.pop();
+    scoreEl.textContent=String(score).padStart(2,'0');
+    if(bonus&&Date.now()-lastBonusAt>=bonusDuration()*1000){bonus=null;lastBonusAt=0;showToast('BONUS FLED')}
+    draw();restartTimer();
+  }
+  // Bonus lifetime shrinks with snake length: 18 - 0.48 × (length - 3) seconds, clamped to 5–18s.
+  function bonusDuration(){return Math.max(5,Math.min(18,18-0.48*(snake.length-3)))}
+  function spawnBonus(){bonus=freeCell();lastBonusAt=Date.now();showToast('GOLDEN DROP!')}
+  function endGame(){
+    clearInterval(timer);state='over';statusEl.textContent='GAME OVER';
+    const stamp=score>0?new Date().toISOString():null;if(stamp)saveScore(score);renderScores(stamp);
+    overlayTitle.innerHTML='GAME<br>OVER';overlayCopy.innerHTML=`FINAL SCORE<br><strong>${String(score).padStart(2,'0')}</strong><br><br>Length ${snake.length}`;
+    overlayHint.textContent='The arcade remembers your best.';startButton.textContent='PLAY AGAIN';overlay.hidden=false;draw();
+  }
+  function pause(){
+    if(state==='playing'){clearInterval(timer);state='paused';statusEl.textContent='PAUSED';overlayTitle.innerHTML='PAUSED';overlayCopy.innerHTML=`SCORE<br><strong>${String(score).padStart(2,'0')}</strong>`;overlayHint.textContent='Take a breath, pixel pilot.';startButton.textContent='RESUME';overlay.hidden=false;draw();}
+    else if(state==='paused'){state='playing';overlay.hidden=true;statusEl.textContent='PLAY';restartTimer();}
+  }
+  function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>toast.classList.remove('show'),1100)}
+  function draw(){
+    ctx.fillStyle=COLORS.bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#a9bc78';for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++)if((x+y)%2===0)ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+    ctx.strokeStyle='#708450';ctx.lineWidth=3;ctx.strokeRect(2,2,canvas.width-4,canvas.height-4);
+    if(food)drawFruit(food,COLORS.dark);
+    if(bonus){const remaining=Math.max(0,Math.ceil(bonusDuration()-(Date.now()-lastBonusAt)/1000));drawFruit(bonus,COLORS.gold,true);ctx.fillStyle=COLORS.dark;ctx.font='16px "Press Start 2P"';ctx.textAlign='center';ctx.fillText(`★ ${remaining}`,canvas.width/2,20)}
+    snake?.forEach((part,i)=>{const x=part.x*CELL,y=part.y*CELL;ctx.fillStyle=i===0?COLORS.dark:COLORS.mid;ctx.fillRect(x+2,y+2,CELL-4,CELL-4);if(i===0){ctx.fillStyle=COLORS.light;const ex=x+CELL/2+(direction.x===1?4:direction.x===-1?-4:0),ey=y+CELL/2+(direction.y===1?4:direction.y===-1?-4:0);ctx.fillRect(ex-1,ey-1,3,3);ctx.fillRect(ex+(direction.y===0?0:-5)-1,ey+(direction.x===0?0:-5)-1,3,3)}});
+    if(state==='ready'){ctx.fillStyle='#283e2e';ctx.font='13px "Press Start 2P"';ctx.textAlign='center';ctx.fillText('PRESS START',canvas.width/2,canvas.height-25)}
+  }
+  function drawFruit(p,color,special=false){const x=p.x*CELL+CELL/2,y=p.y*CELL+CELL/2;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,special?CELL*.37:CELL*.3,0,Math.PI*2);ctx.fill();ctx.fillRect(x-2,y-CELL*.42,4,5);if(special){ctx.fillStyle='#fff0a5';ctx.fillRect(x-3,y-3,6,6)}}
+  startButton.addEventListener('click',()=>state==='paused'?pause():start());
+  document.querySelector('#start-device').addEventListener('click',()=>state==='paused'?pause():start());
+  document.querySelector('#pause-button').addEventListener('click',()=>state==='playing'?pause():state==='paused'?pause():null);
+  document.querySelectorAll('[data-dir]').forEach(button=>button.addEventListener('pointerdown',e=>{e.preventDefault();setDirection(button.dataset.dir)}));
+  document.addEventListener('keydown',e=>{
+    const keys={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'};
+    if(keys[e.key]){e.preventDefault();setDirection(keys[e.key]);return}
+    if(e.code==='Space'){e.preventDefault();if(state==='playing')pause();else if(state==='paused')pause();else start()}
+    if(e.key==='Enter'&&state!=='playing'){state==='paused'?pause():start()}
+  });
+  renderScores();reset();
+})();
+</script>
+</body>
+</html>
